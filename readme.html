@@ -1,0 +1,1064 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML is auto-generated from an M-file.
+To make changes, update the M-file and republish this document.
+      --><title>LCCDE and Z-Transforms with MATLAB</title><meta name="generator" content="MATLAB 7.10"><meta name="date" content="2010-12-01"><meta name="m-file" content="LCCDE_Tutorial"><style type="text/css">
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head><body><div class="content"><h1>LCCDE and Z-Transforms with MATLAB</h1><!--introduction--><p>Purporse Statment: The purpose of this document is to demonstrate how use MATLAB in working with LCCDE's, z-transforms, and system functions. MATLAB will be used to</p><div><ol><li>solve LCCDE's</li><li>determine zeros, poles, and zero-pole diagrams</li><li>determine impulse and step responses.</li></ol></div><p>Please consult any function documentation for details of usage. The methods discussed here are not an exhastive list of methods.</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Linear Constanst-Coeficient Difference Equations (LCCDE)</a></li><li><a href="#3">z-Transform</a></li><li><a href="#4">z-Transforms in MATLAB</a></li><li><a href="#12">Pole-Zero Diagram</a></li><li><a href="#13">Problem 1: Convolution</a></li><li><a href="#14">Problem 2: iZT</a></li><li><a href="#17">Problem 3: PFE and PZ-plot with repeated roots</a></li><li><a href="#19">Problem 4: Impulse, Step, and Freq. Response</a></li><li><a href="#20">Problem 5: Impulse of Causal and Anticausal System</a></li><li><a href="#22">Problem 5: Pole-Zero Plot</a></li><li><a href="#24">References</a></li><li><a href="#25">Subfunctions</a></li><li><a href="#27">Useful MATLAB Functions</a></li></ul></div><h2>Linear Constanst-Coeficient Difference Equations (LCCDE)<a name="1"></a></h2><p>An important class of LTI systems consist of those systems for which the input x[n] and the output y[n] satisfy and Nth-order linear constant-coefficient difference equation of the form</p><p><img src="images/LCCDE_Tutorial_eq69504.png" alt="$$ y[n] + a_1y[n-1] + ... + a_Ny[n-N] = b_0x[n] + b_1x[n-1] + ... + b_Mx[n-M] $$"></p><p>or</p><p><img src="images/LCCDE_Tutorial_eq38561.png" alt="$$ \sum_{k=0}^{N}a_ky[n-k] = \sum_{k=0}^{M}b_kx[n-k]. $$"></p><p>This can also be arranged in the recursive form</p><p><img src="images/LCCDE_Tutorial_eq60820.png" alt="$$ y[n]=-\sum_{k=1}^{N}(\frac{a_k}{a_0})y[n-k] + \sum_{k=0}^{M}(\frac{b_k}{a_0})x[n-k]. $$"></p><p>Solutions to LLCDE's can be obtained using various methods. We will discuss methods involvings recursion and z-transforms. Solving LCCDE's using the recursion method requires prior knoledge of inintal conditions and of the function input sequence x[n].</p><p><b>Example 1: Recursion</b></p><p>(Oppenheim, Problem 2.5)</p><p>Solve the following LLCDE by recursion.</p><p><img src="images/LCCDE_Tutorial_eq46473.png" alt="$$ y[n]-5y[n-1]+6y[n-2]=2x[n-1] $$"></p><p>Given that x[n]=u[n], y[n]=0 for n&lt;0, find y[n]. The solution to this will be the system step response. The book's solution for a step response is <img src="images/LCCDE_Tutorial_eq99202.png" alt="$$ h[n]=u[n]-4(2)^nu[n]+3(3)^nu[n] $$"> .</p><pre class="codeinput"><span class="comment">% solve recursively</span>
+a0=1; <span class="comment">% a_0 term</span>
+a=[-5 6]./a0; <span class="comment">% 'a_k' terms, k=1:N</span>
+b=[0 2 0]./a0;  <span class="comment">% 'b_k' terms, k=0:M</span>
+p=length(a);    <span class="comment">% number of a_k terms, order of system</span>
+q=length(b);    <span class="comment">% number of b_m terms</span>
+N=20;
+x=[zeros(1,p) ones(1,N+1)]; <span class="comment">% input sequence (step sequence)</span>
+y=zeros(1,N+p+1); <span class="comment">% preallocate memory for output sequence</span>
+<span class="keyword">for</span> n=p+1:length(y)
+    y(n)= -sum(a.*y(n-1:-1:n-p)) + sum(b.*x(n:-1:n-q+1)); <span class="comment">%compute y[n]</span>
+<span class="keyword">end</span>
+y=y(p+1:end); <span class="comment">% keep values from n = 0 to N</span>
+figure;
+stem(subplot(211),[0:20],y) <span class="comment">% plot</span>
+title(<span class="string">'Step Response (recursive solution)'</span>);
+xlim([0 21]); xlabel(<span class="string">'n (samples)'</span>); ylabel(<span class="string">'Amplitude'</span>);
+
+<span class="comment">% Compare with book solution</span>
+n=0:20;
+h = 1 - 4*2.^n + 3*3.^n;    <span class="comment">% compute solution</span>
+stem(subplot(212),[0:20],h) <span class="comment">% plot</span>
+title(<span class="string">'Step Response (book solution)'</span>);
+xlim([0 21]); xlabel(<span class="string">'n (samples)'</span>); ylabel(<span class="string">'Amplitude'</span>);
+</pre><img vspace="5" hspace="5" src="images/LCCDE_Tutorial_01.png" alt=""> <p>Given that x[n]=delta[n], y[n]=0 for n&lt;0, find y[n]. The solution will be the system impulse response. The book's solution for an impulse response is <img src="images/LCCDE_Tutorial_eq65611.png" alt="$$ h[n]=-2(2)^nu[n]+2(3)^nu[n] $$"> .</p><pre class="codeinput"><span class="comment">% solve recursively</span>
+x=[zeros(1,p) 1 zeros(1,N)]; <span class="comment">% input sequence (impulse sequence)</span>
+y=zeros(1,N+p+1); <span class="comment">% preallocate memory for output sequence</span>
+<span class="keyword">for</span> n=p+1:length(y)
+    y(n)= -sum(a.*y(n-1:-1:n-p)) + sum(b.*x(n:-1:n-q+1)); <span class="comment">%compute y[n]</span>
+<span class="keyword">end</span>
+y=y(p+1:end); <span class="comment">% keep values from n = 0 to N</span>
+figure;
+stem(subplot(211),[0:20],y) <span class="comment">% plot</span>
+title(<span class="string">'Impulse Response (recursive solution)'</span>);
+xlim([0 21]); xlabel(<span class="string">'n (samples)'</span>); ylabel(<span class="string">'Amplitude'</span>);
+
+<span class="comment">% Compare with book solution</span>
+n=0:20;
+h = -2*2.^n + 2*3.^n;    <span class="comment">% compute solution</span>
+stem(subplot(212),[0:20],h) <span class="comment">% plot</span>
+title(<span class="string">'Impulse Response (book solution)'</span>);
+xlim([0 21]); xlabel(<span class="string">'n (samples)'</span>); ylabel(<span class="string">'Amplitude'</span>);
+</pre><img vspace="5" hspace="5" src="images/LCCDE_Tutorial_02.png" alt=""> <h2>z-Transform<a name="3"></a></h2><p>The z-transform allows a more direct and/or closed form solution to a difference equation compared to recusion. Also, the z-transform allows us to extract the zeros and poles of a system.</p><p>The z-transform of a sequence x[n] is defined as</p><p><img src="images/LCCDE_Tutorial_eq88367.png" alt="$$ X(z)=\sum_{n=-\infty}^{\infty}x[n]z^{-n}=Z[x[n]]. $$"></p><p>Recall the LCCDE form</p><p><img src="images/LCCDE_Tutorial_eq60820.png" alt="$$ y[n]=-\sum_{k=1}^{N}(\frac{a_k}{a_0})y[n-k] + \sum_{k=0}^{M}(\frac{b_k}{a_0})x[n-k]. $$"></p><p>Taking the z-tranform of both sides yields</p><p><img src="images/LCCDE_Tutorial_eq67210.png" alt="$$ Y(z)=-\sum_{k=1}^{N}(\frac{a_k}{a_0})z^{-k}Y(z) + \sum_{k=0}^{M}(\frac{b_k}{a_0})z^{-k}X(z). $$"></p><p>Solving Y(z) in terms of X(z) yields</p><p><img src="images/LCCDE_Tutorial_eq22281.png" alt="$$ Y(z)=\frac{\sum_{k=0}^{M}{b_k}z^{-k}}{\sum_{k=0}^{N}{a_k}z^{-k}}X(z)=H(z)X(z) $$"></p><p>where H(z) represents the system function of the LTI system.</p><p><img src="images/LCCDE_Tutorial_eq08460.png" alt="$$ H(z)=\frac{Y(z)}{X(z)} $$"></p><h2>z-Transforms in MATLAB<a name="4"></a></h2><p>MATLAB includes several functions that can aid in performing z-transforms (ZT) of a function or sequence and/or it's inverse (iZT). Three methods and their respective functions are discussed below.</p><p><h3>Symbolic Toolbox Method</h3></p><p>The <i>ztrans()</i> and <i>iztrans()</i> functions perform the z-transform and the inverse z-transform.</p><p><b>Example 2: Sympolic ZT</b></p><p>Find ZT of x[n]=a^n u[n]</p><pre class="codeinput">syms <span class="string">a</span> <span class="string">n</span> <span class="string">x</span> <span class="string">X</span> <span class="comment">% define symbolic variables</span>
+x=a^n;       <span class="comment">% define sequence x[n] (Table 3.1)</span>
+X=ztrans(x)  <span class="comment">% perform ZT</span>
+</pre><pre class="codeoutput"> 
+X =
+ 
+-z/(a - z)
+ 
+</pre><p><b>Example 3: Sympolic ZT</b></p><p>Find ZT of x[n]=cos[wn]</p><pre class="codeinput">syms <span class="string">w</span> <span class="string">n</span> <span class="string">x</span> <span class="string">X</span> <span class="comment">% define symbolic variables</span>
+x=cos(w*n);  <span class="comment">% define sequence x[n] (Table 3.1)</span>
+X=ztrans(x)  <span class="comment">% perform ZT</span>
+</pre><pre class="codeoutput"> 
+X =
+ 
+(z*(z - cos(w)))/(z^2 - 2*cos(w)*z + 1)
+ 
+</pre><p><b>Example 4: Sympolic iZT</b> (Oppenhiem, Ex. 3.10)</p><p>Find iZT of</p><p><img src="images/LCCDE_Tutorial_eq16124.png" alt="$$ X(z)=\frac{1+2z^{-1}+z^{-2}}{1-\frac{3}{2}z^{-1}+\frac{1}{2}z^{-2}} $$"></p><pre class="codeinput">syms <span class="string">z</span> <span class="string">x</span> <span class="string">X</span>   <span class="comment">% define symbolic variables</span>
+X=(z^2+2*z+1)/(z^2-3*z/2+1/2) <span class="comment">%define transfer function X(z)</span>
+x=iztrans(X) <span class="comment">% perform inverse ZT</span>
+</pre><pre class="codeoutput"> 
+X =
+ 
+(z^2 + 2*z + 1)/(z^2 - (3*z)/2 + 1/2)
+ 
+ 
+x =
+ 
+2*kroneckerDelta(n, 0) - 9*(1/2)^n + 8
+ 
+</pre><p><h3> 2. Power Series Method </h3></p><p>The <b>deconv</b> function can be used to perform the long division required in power series method.</p><p>For the given z-transform</p><p><img src="images/LCCDE_Tutorial_eq42283.png" alt="$$ X(z)=\frac{b_0+b_1z^{-1}+...+b_Mz^{-M}}{a_0+a_1z^{-1}+...+a_Mz^{-M}} $$"></p><p>the matlab command is <b>[q,r]=deconv(b,a)</b> where b and a vectors containing the coefficients of the numerator and denominator respectively.</p><p><b>Example 5: iZT by deconvolution</b></p><p>Given X(z) find x[n] by deconvolution</p><p><img src="images/LCCDE_Tutorial_eq98680.png" alt="$$ X(z)=\frac{1+2z^{z-1}+z^{-2}}{1-z^{z-1}+0.4z^{-2}} $$"></p><pre class="codeinput">b=[1 2 1];
+a=[1 -1 .4];
+n=20;
+b=[b zeros(1,n)]; <span class="comment">% make b longer</span>
+[x,r]=deconv(b,a);
+<span class="comment">% plot</span>
+figure;
+stem(subplot(211),[0:length(x)-1],x) <span class="comment">% plot</span>
+title(<span class="string">'Power Series Expansion Solution of x[n]'</span>); xlim([0 21])
+ylabel(<span class="string">'Amplitude'</span>)
+<span class="comment">% Compare impulse response</span>
+subplot(212);
+impz(b,a); <span class="comment">% plot impulse response</span>
+title(<span class="string">'Impulse Response x[n]'</span>); xlim([0 21])
+</pre><img vspace="5" hspace="5" src="images/LCCDE_Tutorial_03.png" alt=""> <p><b>3. Partial fraction expansion (PFE) method</b></p><p><img src="images/LCCDE_Tutorial_eq82839.png" alt="$$ H(z)=\frac{B(z)}{A(z)}=\frac{b_0+b_1z^{-1}+...+b_Mz^{-M}}{a_0+a_1z^{-1}+...+a_Mz^{-M}} $$"></p><p>We can use the MATLAB <b>residuez</b> function to convert between partial fraction expansion and polynomial coefficients. Partial fraction expansion may yield a z-function that is then solvable using the inspection method. If there are no multiple roots, then</p><p><img src="images/LCCDE_Tutorial_eq68401.png" alt="$$ \frac{B(z)}{A(z)}=\frac{r_1}{1-p_1z^{-1}} +\frac{r_2}{1-p_2z^{-1}}+...+\frac{r_n}{1-p_nz^{-1}}+k_1+k_2z^{-1}+...+k_{m-n-1}z^{-m-n} $$"></p><p><b>Example 8: PFE</b></p><p>Find the partial fraction expansion of X(z) that is given by</p><p><img src="images/LCCDE_Tutorial_eq49723.png" alt="$$ X(z)=\frac{1}{(1-\frac{1}{4}z^{-1})(1-\frac{1}{2}z^{-1})} $$"></p><pre class="codeinput">b=1; <span class="comment">% numerator coefficients</span>
+a=conv([1 -1/4],[1 -1/2]); <span class="comment">% multiplying polynomials to get denom. coef.</span>
+[r,p,k]=residuez(b,a) <span class="comment">% compute residues (r), poles (p), and direct terms (k)</span>
+</pre><pre class="codeoutput">
+r =
+
+     2
+    -1
+
+
+p =
+
+    0.5000
+    0.2500
+
+
+k =
+
+     []
+
+</pre><p>This represents the partial fraction expansion</p><p><img src="images/LCCDE_Tutorial_eq28367.png" alt="$$ X(z)=\frac{2}{1-\frac{1}{2}z^{-1}}+\frac{-1}{1-\frac{1}{4}z^{-1}} $$"></p><p><b>Example 7: PFE</b> (Oppenheim, Ex. 3.10)</p><p>Find the partial fraction expansion of X(z) that is given by</p><p><img src="images/LCCDE_Tutorial_eq16124.png" alt="$$ X(z)=\frac{1+2z^{-1}+z^{-2}}{1-\frac{3}{2}z^{-1}+\frac{1}{2}z^{-2}} $$"></p><pre class="codeinput">b=[1 2 1]; <span class="comment">% numerator coefficients</span>
+a=[1 -3/2 1/2]; <span class="comment">% denominator coefficients</span>
+[r,p,k]=residuez(b,a) <span class="comment">% compute residues (r), poles (p), and direct terms (k)</span>
+</pre><pre class="codeoutput">
+r =
+
+     8
+    -9
+
+
+p =
+
+    1.0000
+    0.5000
+
+
+k =
+
+     2
+
+</pre><p>This represents the fraction expansion</p><p><img src="images/LCCDE_Tutorial_eq59698.png" alt="$$ X(z)=\frac{8}{1-z^{-1}}+\frac{-9}{1-\frac{1}{2}z^{-1}}+2 $$"></p><h2>Pole-Zero Diagram<a name="12"></a></h2><p>Matlab contains several functions that may help when working with zeros and poles. The <b>zplane</b> and <b>pzmap</b> functions can be used display pole-zero (PZ) diagram of z-functions. The poles and zeros can be determined from rational polynomials using <b>roots</b>, <b>poles</b>, and <b>zero</b> functions.</p><p><b>Example 8: Poles, Zeros, and PZ map</b></p><p>Given H(z) below find the zeros, poles, and plot the PZ map. We will use three methods to find the poles and zeros, and use three methods to plot the PZ map.</p><p><img src="images/LCCDE_Tutorial_eq93494.png" alt="$$ H(z)=\frac{1-2z^{-1}}{1-\frac{2}{3}z^{-1}} $$"></p><pre class="codeinput">a=[1 -2/3]; <span class="comment">% denominator coefs.</span>
+b=[1 -2];   <span class="comment">% numerator coefs.</span>
+
+<span class="comment">% ZP Method 1 - using 'roots' and 'zplane' functions</span>
+p1=roots(a);    <span class="comment">% get poles of rational function</span>
+z1=roots(b);    <span class="comment">% get zeros of rational function</span>
+disp([<span class="string">'Method 1: poles=['</span> num2str(p1) <span class="string">'] , zeros=['</span> num2str(z1) <span class="string">']'</span>])
+
+<span class="comment">% ZP Method 2 - using 'tf', 'pole', 'zero', and 'pzplot' functions</span>
+H=tf(b,a);      <span class="comment">% generate trasfer function based on rational polynomial</span>
+p2=pole(H);     <span class="comment">% get poles of transfer function</span>
+z2=zero(H);     <span class="comment">% get zeros of transfer function</span>
+disp([<span class="string">'Method 2: poles=['</span> num2str(p2) <span class="string">'] , zeros=['</span> num2str(z2) <span class="string">']'</span>])
+H               <span class="comment">% print transfer funtion to command line</span>
+
+<span class="comment">% ZP Method 3 - using 'tf2zpk'</span>
+[z3,p3,k3] = tf2zpk(b,a);   <span class="comment">%Convert transfer function filter parameters to zero-pole-gain form</span>
+disp([<span class="string">'Method 3: poles=['</span> num2str(p3) <span class="string">'] , zeros=['</span> num2str(z3) <span class="string">'], gain='</span> num2str(k3)])
+
+<span class="comment">% Plot Method 1: using zplane(b,a). NOTE: a and b must be row vectors.</span>
+figure; zplane(b,a);
+title(<span class="string">'PZ Map using zplane(b,a)'</span>);
+xlim([-2 2]); ylim([-2 2]);
+xlabel(<span class="string">'Real Axis'</span>); ylabel(<span class="string">'Imaginary Axis'</span>)
+
+<span class="comment">% Plot Method 2: using zplane(z,p). NOTE: z and p must be column vectors.</span>
+figure; zplane(z1,p1);
+title(<span class="string">'PZ Map using zplane(z,p)'</span>);
+xlim([-2 2]); ylim([-2 2]);
+xlabel(<span class="string">'Real Axis'</span>); ylabel(<span class="string">'Imaginary Axis'</span>)
+
+<span class="comment">% Plot Method 3: using pzmap</span>
+figure; pzmap(H);
+title(<span class="string">'PZ Map using pzmap'</span>);
+xlim([-2 2]); ylim([-2 2]);
+xlabel(<span class="string">'Real Axis'</span>); ylabel(<span class="string">'Imaginary Axis'</span>)
+</pre><pre class="codeoutput">Method 1: poles=[0.66667] , zeros=[2]
+Method 2: poles=[0.66667] , zeros=[2]
+ 
+Transfer function:
+  s - 2
+----------
+s - 0.6667
+ 
+Method 3: poles=[0.66667] , zeros=[2], gain=1
+</pre><img vspace="5" hspace="5" src="images/LCCDE_Tutorial_04.png" alt=""> <img vspace="5" hspace="5" src="images/LCCDE_Tutorial_05.png" alt=""> <img vspace="5" hspace="5" src="images/LCCDE_Tutorial_06.png" alt=""> <h2>Problem 1: Convolution<a name="13"></a></h2><p>(Ingle, Ex. 2.10)</p><p>Consider the finite duration input sequence x[n] given by</p><p><img src="images/LCCDE_Tutorial_eq03646.png" alt="$$ x[n]=u[n]-u[n-10] $$"></p><p>and the infinite duration impulse response h[n] is given by</p><p><img src="images/LCCDE_Tutorial_eq45567.png" alt="$$ h[n]=(0.9)^nu[n]. $$"></p><p>Determine y[n]=x[n]*h[n]</p><pre class="codeinput">n=-5:50;            <span class="comment">% define range of n</span>
+x = stepseq(0,-5,50) - stepseq(10,-5,50); <span class="comment">% generate x[n]</span>
+h=.9.^(0:50);       <span class="comment">% generate h[n]</span>
+y_conv=conv(x,h);   <span class="comment">% convolve x and h</span>
+y_conv=y_conv(1:length(x)); <span class="comment">% keep samples of interest</span>
+y_filt=filter(1,[1 -.9],x); <span class="comment">% compare with filter function</span>
+
+<span class="comment">% plot convoltion</span>
+figure; subplot(211);
+stem(n, y_conv); <span class="comment">% plot output sequence</span>
+xlim([-5 50]);
+title(<span class="string">'Output Sequence y[n] (convolution)'</span>);
+xlabel(<span class="string">'n (samples)'</span>); ylabel(<span class="string">'Amplitude'</span>);
+
+<span class="comment">% plot filter comparison</span>
+subplot(212);
+stem(n, y_filt); <span class="comment">% plot output sequence</span>
+xlim([-5 50]);
+title(<span class="string">'Output Sequence y[n] (filter fxn)'</span>);
+xlabel(<span class="string">'n (samples)'</span>); ylabel(<span class="string">'Amplitude'</span>);
+</pre><img vspace="5" hspace="5" src="images/LCCDE_Tutorial_07.png" alt=""> <h2>Problem 2: iZT<a name="14"></a></h2><p>Determine the iZT of X(z) so that the resulting sequence is causual and contains no complex numbers where X(z) is given as</p><p><img src="images/LCCDE_Tutorial_eq43862.png" alt="$$ X(z)=\frac{1+0.4\sqrt{2}z^{-1}}{1-0.8\sqrt{2}z^{-1}+0.64z^{-2}}. $$"></p><pre class="codeinput">b=[1 0.4*sqrt(2)];
+a=[1 -0.8*sqrt(2) 0.64];
+[r,p,c] = residuez(b,a)
+Mp=abs(p')      <span class="comment">% pole magnitude</span>
+Ap=angle(p')/pi <span class="comment">% pole angles in pi units</span>
+</pre><pre class="codeoutput">
+r =
+
+   0.5000 - 1.0000i
+   0.5000 + 1.0000i
+
+
+p =
+
+   0.5657 + 0.5657i
+   0.5657 - 0.5657i
+
+
+c =
+
+     []
+
+
+Mp =
+
+    0.8000    0.8000
+
+
+Ap =
+
+   -0.2500    0.2500
+
+</pre><p>From the above we get</p><p><img src="images/LCCDE_Tutorial_eq10464.png" alt="$$ X(z)=\frac{0.5+j}{1-\left | 0.8 \right | e^{-j\frac{\pi}{4}}z^{-1}} + \frac{0.5-j}{1-\left | 0.8 \right | e^{j\frac{\pi}{4}}z^{-1}} , \left | z \right | &gt; 0.8 $$"></p><p>and from Table 3.1 we have</p><p><img src="images/LCCDE_Tutorial_eq46937.png" alt="$$ x[n]=(0.5+j) \left | 0.8 \right | ^ne^{-j\frac{\pi}{4}n}u[n]] + (0.5-j) \left | 0.8 \right | ^ne^{j\frac{\pi}{4}n}u[n]  $$"></p><p><img src="images/LCCDE_Tutorial_eq21005.png" alt="$$ x[n]=\left | 0.8\right |^n  \left [ 0.5 \left \{ e^{-j\frac{\pi}{4}n} + e^{j\frac{\pi}{4}n} \right \}  + j\left \{ e^{-j\frac{\pi}{4}n} + e^{j\frac{\pi}{4}n} \right \} \right ]u[n] $$"></p><p><img src="images/LCCDE_Tutorial_eq95357.png" alt="$$ x[n]=\left | 0.8\right |^n  \left [ cos{\left \{  \frac{\pi n}{4}\right \}} + 2sin{\left \{\frac{\pi n}{4}\right \}} \right ]u[n] $$"></p><pre class="codeinput"><span class="comment">%verify in Matlab</span>
+n=0:20;
+impseq=[1 zeros(1, length(n)-1)];         <span class="comment">% generate impulse sequence</span>
+x1=filter(b,a,impseq);                    <span class="comment">% compute impulse response</span>
+x2=(0.8.^n).*(cos(pi*n/4)+2*sin(pi*n/4)); <span class="comment">% compute impulse response (book solution)</span>
+
+<span class="comment">% Plot</span>
+figure; subplot(211);
+stem(n,x1); <span class="comment">% plot impulse response</span>
+title(<span class="string">'Impulse Response from filter fxn'</span>);
+xlabel(<span class="string">'n (samples)'</span>); ylabel(<span class="string">'Amplitude'</span>);
+
+subplot(212);
+stem(n,x2); <span class="comment">% plot impusle response</span>
+title(<span class="string">'Impulse Response from solution'</span>);
+xlabel(<span class="string">'n (samples)'</span>); ylabel(<span class="string">'Amplitude'</span>);
+
+figure;
+zplane(b,a); <span class="comment">% plot PZ map</span>
+</pre><img vspace="5" hspace="5" src="images/LCCDE_Tutorial_08.png" alt=""> <img vspace="5" hspace="5" src="images/LCCDE_Tutorial_09.png" alt=""> <h2>Problem 3: PFE and PZ-plot with repeated roots<a name="17"></a></h2><p>(Oppenheim, 3.33a)</p><p>Find the partial fraction expansion of X(z) that is given by</p><p><img src="images/LCCDE_Tutorial_eq34443.png" alt="$$ X(z)=\frac {1} {(1-\frac{1}{2}z^{-1})^2(1-2z^{-1})(1-3z^{-1})} $$"></p><pre class="codeinput">b=[1]; <span class="comment">% numerator coefficients</span>
+a1=conv([1 1/2],[1 1/2]); <span class="comment">% multiplying polynomials to get denom. coef.</span>
+a23=conv([1 -2],[1 -3]);
+a=conv(a1,a23);
+
+[r,p,k]=residuez(b,a) <span class="comment">% compute residues (r), poles (p), and direct terms (k)</span>
+</pre><pre class="codeoutput">
+r =
+
+    2.2041
+   -1.2800
+    0.0473
+    0.0286
+
+
+p =
+
+    3.0000
+    2.0000
+   -0.5000
+   -0.5000
+
+
+k =
+
+     []
+
+</pre><p>This represents the partial fraction expansion</p><p><img src="images/LCCDE_Tutorial_eq25791.png" alt="$$ X(z)=\frac{2.2041}{1-3z^{-1}}+\frac{-1.28}{1-2z^{-1}} + \frac{0.473}{1+\frac{1}{2}z^{-1}} + \frac{0.286}{(1+\frac{1}{2}z^{-1})^2} $$"></p><pre class="codeinput">figure; zplane(b,a)
+</pre><img vspace="5" hspace="5" src="images/LCCDE_Tutorial_10.png" alt=""> <h2>Problem 4: Impulse, Step, and Freq. Response<a name="19"></a></h2><p>(Oppenheim, Problem 2.9)</p><p>Find the impulse response, freq. response, and step response of the LTI system defined by the difference equation</p><p><img src="images/LCCDE_Tutorial_eq88189.png" alt="$$ y[n]-\frac{5}{6}y[n-1]+\frac{1}{6}y[n-2]=\frac{1}{3}x[n-1]. $$"></p><pre class="codeinput">a=[1 -5/6 1/6];
+b=[0 1/3 0];
+figure; freqz(b,a) <span class="comment">% frequency response</span>
+title(<span class="string">'Freq. Response'</span>)
+
+figure;
+subplot(221); impz(b,a)  <span class="comment">% plot impulse response</span>
+subplot(222); stepz(b,a) <span class="comment">% plot step response</span>
+
+<span class="comment">% Compare with book solution</span>
+n=0:14;
+hImp=-2*(1/3).^n+2*(1/2).^n;
+hStep=1+(1/3).^n-2*(1/2).^n;
+subplot(223); stem(n,hImp)  <span class="comment">% plot impulse response</span>
+title(<span class="string">'Impulse Response (book)'</span>); xlabel(<span class="string">'n (samples)'</span>); ylabel(<span class="string">'Amplitude'</span>);
+subplot(224); stem(n,hStep)  <span class="comment">% plot impulse response</span>
+title(<span class="string">'Step Response (book)'</span>); xlabel(<span class="string">'n (samples)'</span>); ylabel(<span class="string">'Amplitude'</span>);
+</pre><img vspace="5" hspace="5" src="images/LCCDE_Tutorial_11.png" alt=""> <img vspace="5" hspace="5" src="images/LCCDE_Tutorial_12.png" alt=""> <h2>Problem 5: Impulse of Causal and Anticausal System<a name="20"></a></h2><p>(Oppenheim, Problem 2.16)</p><p>Consider the difference equation</p><p><img src="images/LCCDE_Tutorial_eq93138.png" alt="$$ y[n]-\frac{1}{4}y[n-1]+\frac{1}{8}y[n-2]=3x[n-1] $$"></p><p>b) Both a causal and an anticausal LTI system are characterized by this difference equation. Find the impulse responses of the two systems. c) Show that the causal LTI is stable and the anticausal LTI system is unstable.</p><p>From the difference equation and the ZT we can generate the system function H(z)</p><p><img src="images/LCCDE_Tutorial_eq41066.png" alt="$$ H(z)=\frac{3}{1-\frac{1}{4}z^{-1}-\frac{1}{4}z^{-1}} $$"></p><p>We can use matlab to get the expanded form of H(z).</p><pre class="codeinput">b=[3];
+a=[1 -1/4 -1/8];
+[r,p,c]=residuez(b,a)
+</pre><pre class="codeoutput">
+r =
+
+     2
+     1
+
+
+p =
+
+    0.5000
+   -0.2500
+
+
+c =
+
+     []
+
+</pre><p><img src="images/LCCDE_Tutorial_eq24025.png" alt="$$ H(z)=\frac{2}{1-0.5z^{-1}} + \frac{1}{1+0.25z^{-1}} $$"></p><p>Using Table 3.1 we get the following causal and anticausal impulse responses by taking the iZT of the terms in H(z).</p><p><img src="images/LCCDE_Tutorial_eq30768.png" alt="$$ h_c[n]=\left [ 2(1/2)^n + (-1/4)^n \right ] u[n] $$"></p><p><img src="images/LCCDE_Tutorial_eq57321.png" alt="$$ h_ac[n]=-\left [ 2(1/2)^n + (-1/4)^n \right ] u[-n-1] $$"></p><p>From ROC we see causal system is stable (ROC includes unit cirlce) and the anticausal system in unstable.</p><pre class="codeinput">n=0:50;
+hc=2*(1/2).^n + (-1/4).^n;
+n=-50:0;
+hac=-2*(1/2).^-n - (-1/4).^-n;
+
+roc_c=max(abs(p));  <span class="comment">%ROC of causal is righ-sided extending from largest pole</span>
+roc_ac=min(abs(p)); <span class="comment">%ROC of causal is righ-sided extending from smallest pole</span>
+
+<span class="comment">% Plot Pole-Zero maps with ROC</span>
+<span class="comment">% Causal System</span>
+figure;
+circle(roc_c,0) <span class="comment">% draw ROC</span>
+hold(<span class="string">'on'</span>);
+zplane(b,a) <span class="comment">% draw ZP map</span>
+title(<span class="string">'PZ Map (causal)'</span>)
+<span class="comment">% Anticausal System</span>
+figure;
+circle(roc_ac,0) <span class="comment">% draw ROC</span>
+hold(<span class="string">'on'</span>);
+zplane(b,a) <span class="comment">% draw ZP map</span>
+title(<span class="string">'PZ Map (anticausal)'</span>)
+</pre><img vspace="5" hspace="5" src="images/LCCDE_Tutorial_13.png" alt=""> <img vspace="5" hspace="5" src="images/LCCDE_Tutorial_14.png" alt=""> <h2>Problem 5: Pole-Zero Plot<a name="22"></a></h2><p>(Oppenheim, Problem 3.12)</p><p>Sketch the pole-zero plot for each of the following z-transforms and shade ROC:</p><p><img src="images/LCCDE_Tutorial_eq01209.png" alt="$$ X_1(z)=\frac{1-1/2z^{-1}}{1+1/2z^{-1}}, ROC: \left | z \right | <2 $$"></p><p><img src="images/LCCDE_Tutorial_eq46807.png" alt="$$ X_2(z)=\frac{1-1/3z^{-1}}{\left ( 1+1/2z^{-1} \right )\left ( 1-2/3z^{-1} \right )}, x_2[n] causal $$"></p><p><img src="images/LCCDE_Tutorial_eq66116.png" alt="$$ X_3(z)=\frac{1+z^{-1}-2z^{-2}}{1-13/6z^{-1}+z^{-2}} , x_3[n] absolutely summable $$"></p><pre class="codeinput"><span class="comment">% define a and b of each z-function</span>
+a1=[1 2];
+b1=[1 -1/2];
+a2=conv([1 1/2],[1 -2/3]);
+b2=[1 -1/3];
+a3=[1 -13/6 1];
+b3=[1 1 -2];
+
+<span class="comment">% find poles for each to determine ROC</span>
+p1=roots(a1);
+p2=roots(a2);
+p3=roots(a3);
+disp([<span class="string">'p1=['</span> num2str(p1') <span class="string">'], p2=['</span> num2str(p2') <span class="string">'], p3=['</span> num2str(p3') <span class="string">']'</span> ])
+</pre><pre class="codeoutput">p1=[-2], p2=[0.66667        -0.5], p3=[1.5     0.66667]
+</pre><p>X1(z) has ROC <tt>z</tt>&lt;2, X2(z) has ROC <tt>z</tt>&gt;2/3, X3(z) has ROC 2/3 &lt; <tt>z</tt> &lt; 3/2</p><pre class="codeinput"><span class="comment">%plot each PZ map and ROC</span>
+<span class="comment">% X1</span>
+figure;
+circle(p1,0) <span class="comment">% draw ROC</span>
+hold <span class="string">'on'</span>;
+zplane(b1,a1) <span class="comment">% draw ZP map</span>
+title(<span class="string">'PZ Map: X_1(z)'</span>)
+
+<span class="comment">% X2</span>
+figure;
+circle(max(abs(p2)),1) <span class="comment">% draw ROC</span>
+hold <span class="string">'on'</span>;
+zplane(b2,a2); <span class="comment">% draw ZP map</span>
+title(<span class="string">'PZ Map: X_2(z)'</span>)
+set(gca,<span class="string">'color'</span>,[.95 .95 .95])
+
+<span class="comment">% X3</span>
+figure;
+circle(3/2,0); hold <span class="string">on</span>; circle(2/3,2); <span class="comment">% draw ROC</span>
+hold <span class="string">on</span>;
+zplane(b3,a3) <span class="comment">% draw ZP map</span>
+title(<span class="string">'PZ Map: X_3(z)'</span>)
+</pre><img vspace="5" hspace="5" src="images/LCCDE_Tutorial_15.png" alt=""> <img vspace="5" hspace="5" src="images/LCCDE_Tutorial_16.png" alt=""> <img vspace="5" hspace="5" src="images/LCCDE_Tutorial_17.png" alt=""> <h2>References<a name="24"></a></h2><p>Alan V. Oppenheim and Ronald W. Schafer. 2009. Discrete-Time Signal Processing (3rd ed.). Prentice Hall Press, Upper Saddle River, NJ, USA.</p><p>Vinay K. Ingle and John G. Proakis. 1999. Digital Signal Processing Using MATLAB (1st ed.). Brooks/Cole Publishing Co., Pacific Grove, CA, USA.</p><h2>Subfunctions<a name="25"></a></h2><pre class="codeinput">type <span class="string">circle</span>
+</pre><pre class="codeoutput">
+function circle(r,side)
+% draws a filled circle with fill defined by side
+% r: defines radius
+% side: defines the side (1= fill outside, 0=foll inside)
+    t=linspace(0,2*pi,1000);
+    x=r*cos(t); y=r*sin(t);   % create circle points for ROC
+    if side==1
+        c=[1 1 1];
+        set(gca,'color',[.95 .95 .95]);
+        hold(gca,'on');
+    elseif side==2 % fill circle white and white axes
+        c=[1 1 1];
+    else
+        c=[.95 .95 .95];
+    end
+    fill(x,y,c); % draw circle    
+    hold(gca,'off');
+end
+</pre><pre class="codeinput">type <span class="string">stepseq</span>
+</pre><pre class="codeoutput">
+function [x,n]=stepseq(n0,n1,n2)
+%Generate  x(n)=u(n-n0);n1&lt;=n&lt;=n2
+%[x,n]=stepseq(n0,n1,n2)
+
+    STEP = 1;
+
+    n = n1:STEP:n2;
+    x = n &gt; n0;
+end
+</pre><h2>Useful MATLAB Functions<a name="27"></a></h2><p>
+ <ul>
+  <li><a href="http://www.mathworks.com/help/techdoc/ref/poly.html">poly</a></li>
+  <li><a href="http://www.mathworks.com/help/techdoc/ref/roots.html">roots</a></li>
+  <li><a href="http://www.mathworks.com/help/toolbox/signal/residuez.html">residuez</a></li>
+  <li><a href="http://www.mathworks.com/help/toolbox/control/ref/tf.html">tf</a></li>
+  <li><a href="http://www.mathworks.com/help/toolbox/control/ref/zpk.html">zpk</a></li>
+  <li><a href="http://www.mathworks.com/help/toolbox/signal/zp2tf.html">zp2tf</a></li>
+  <li><a href="http://www.mathworks.com/products/signal/functionlist.html">tf2zpk</a></li>
+  <li><a href="http://www.mathworks.com/help/techdoc/ref/conv.html">conv</a></li
+  <li><a href="http://www.mathworks.com/help/techdoc/ref/deconv.html">deconv</a></li>
+  <li><a href="http://www.engin.umich.edu/group/ctm/extras/commands.html">dimpulse</a></li>
+  <li><a href="http://www.mathworks.com/help/toolbox/signal/freqz.html">freqz</a></li>
+  <li><a href="http://www.mathworks.com/help/techdoc/ref/filter.html">filter</a></li>
+  <li><a href="http://www.mathworks.com/help/toolbox/control/ref/pzmap.html">pzmap</a></li>
+  <li><a href="http://www.mathworks.com/help/toolbox/signal/impz.html">impz</a></li>
+  <li><a href="http://www.mathworks.com/help/toolbox/signal/stepz.html">stepz</a></li>
+  <li><a
+  href="http://www.mathworks.com/help/techdoc/ref/poly.html">abc</a></li>
+ </ul>
+</p><pre class="codeinput">close <span class="string">all</span>;  <span class="comment">% close all figures</span>
+clear       <span class="comment">% clear workspace</span>
+</pre><p class="footer"><br>
+      Published with MATLAB&reg; 7.10<br></p></div><!--
+##### SOURCE BEGIN #####
+%% LCCDE and Z-Transforms with MATLAB
+% Purporse Statment: The purpose of this document is to
+% demonstrate how use MATLAB in working with LCCDE's,
+% z-transforms, and system functions. MATLAB will be used to
+% 
+% # solve LCCDE's
+% # determine zeros, poles, and zero-pole diagrams
+% # determine impulse and step responses.
+%
+% Please consult any function documentation for details of usage. The methods 
+% discussed here are not an exhastive list of methods.
+
+%% Linear Constanst-Coeficient Difference Equations (LCCDE)
+%
+% An important class of LTI systems consist of those systems for which the input x[n]
+% and the output y[n] satisfy and Nth-order linear constant-coefficient difference equation
+% of the form
+% 
+% $$ y[n] + a_1y[n-1] + ... + a_Ny[n-N] = b_0x[n] + b_1x[n-1] + ... + b_Mx[n-M] $$
+%
+% or
+%
+% $$ \sum_{k=0}^{N}a_ky[n-k] = \sum_{k=0}^{M}b_kx[n-k]. $$
+% 
+% This can also be arranged in the recursive form
+%
+% $$ y[n]=-\sum_{k=1}^{N}(\frac{a_k}{a_0})y[n-k] + \sum_{k=0}^{M}(\frac{b_k}{a_0})x[n-k]. $$
+% 
+%
+% Solutions to LLCDE's can be obtained using various methods. We will discuss
+% methods involvings recursion and z-transforms. Solving LCCDE's using
+% the recursion method requires prior knoledge of inintal conditions
+% and of the function input sequence x[n].
+%
+% *Example 1: Recursion*
+% 
+% (Oppenheim, Problem 2.5)
+% 
+% Solve the following LLCDE by recursion.
+%
+% $$ y[n]-5y[n-1]+6y[n-2]=2x[n-1] $$
+%
+% Given that x[n]=u[n], y[n]=0 for n<0, find y[n]. The solution to this will be
+% the system step response. The book's solution for a step response is 
+% $$ h[n]=u[n]-4(2)^nu[n]+3(3)^nu[n] $$ .
+
+% solve recursively
+a0=1; % a_0 term
+a=[-5 6]./a0; % 'a_k' terms, k=1:N
+b=[0 2 0]./a0;  % 'b_k' terms, k=0:M
+p=length(a);    % number of a_k terms, order of system
+q=length(b);    % number of b_m terms
+N=20;
+x=[zeros(1,p) ones(1,N+1)]; % input sequence (step sequence)
+y=zeros(1,N+p+1); % preallocate memory for output sequence
+for n=p+1:length(y)    
+    y(n)= -sum(a.*y(n-1:-1:n-p)) + sum(b.*x(n:-1:n-q+1)); %compute y[n]
+end
+y=y(p+1:end); % keep values from n = 0 to N
+figure;
+stem(subplot(211),[0:20],y) % plot
+title('Step Response (recursive solution)'); 
+xlim([0 21]); xlabel('n (samples)'); ylabel('Amplitude');
+
+% Compare with book solution
+n=0:20;
+h = 1 - 4*2.^n + 3*3.^n;    % compute solution
+stem(subplot(212),[0:20],h) % plot
+title('Step Response (book solution)'); 
+xlim([0 21]); xlabel('n (samples)'); ylabel('Amplitude');
+%%
+% Given that x[n]=delta[n], y[n]=0 for n<0, find y[n]. The solution will be
+% the system impulse response. The book's solution for an impulse response is
+% $$ h[n]=-2(2)^nu[n]+2(3)^nu[n] $$ .
+
+% solve recursively
+x=[zeros(1,p) 1 zeros(1,N)]; % input sequence (impulse sequence)
+y=zeros(1,N+p+1); % preallocate memory for output sequence
+for n=p+1:length(y)    
+    y(n)= -sum(a.*y(n-1:-1:n-p)) + sum(b.*x(n:-1:n-q+1)); %compute y[n]
+end
+y=y(p+1:end); % keep values from n = 0 to N
+figure;
+stem(subplot(211),[0:20],y) % plot
+title('Impulse Response (recursive solution)'); 
+xlim([0 21]); xlabel('n (samples)'); ylabel('Amplitude');
+
+% Compare with book solution
+n=0:20;
+h = -2*2.^n + 2*3.^n;    % compute solution
+stem(subplot(212),[0:20],h) % plot
+title('Impulse Response (book solution)'); 
+xlim([0 21]); xlabel('n (samples)'); ylabel('Amplitude');
+
+
+%% z-Transform
+%
+% The z-transform allows a more direct and/or closed form solution to a 
+% difference equation compared to recusion. Also, the z-transform allows us
+% to extract the zeros and poles of a system.
+%
+% The z-transform of a sequence x[n] is defined as
+%
+% $$ X(z)=\sum_{n=-\infty}^{\infty}x[n]z^{-n}=Z[x[n]]. $$
+%
+% Recall the LCCDE form
+%
+% $$ y[n]=-\sum_{k=1}^{N}(\frac{a_k}{a_0})y[n-k] + \sum_{k=0}^{M}(\frac{b_k}{a_0})x[n-k]. $$
+%
+% Taking the z-tranform of both sides yields
+%
+% $$ Y(z)=-\sum_{k=1}^{N}(\frac{a_k}{a_0})z^{-k}Y(z) + \sum_{k=0}^{M}(\frac{b_k}{a_0})z^{-k}X(z). $$
+%
+% Solving Y(z) in terms of X(z) yields
+%
+% $$ Y(z)=\frac{\sum_{k=0}^{M}{b_k}z^{-k}}{\sum_{k=0}^{N}{a_k}z^{-k}}X(z)=H(z)X(z) $$
+%
+% where H(z) represents the system function of the LTI system.
+%
+% $$ H(z)=\frac{Y(z)}{X(z)} $$ 
+%
+%% z-Transforms in MATLAB
+%
+% MATLAB includes several functions that can aid in performing z-transforms (ZT) 
+% of a function or sequence and/or it's inverse (iZT). Three methods and their respective
+% functions are discussed below.
+%
+% <html><h3>Symbolic Toolbox Method</h3></html>
+% 
+% The _ztrans()_ and _iztrans()_ functions perform the
+% z-transform and the inverse z-transform.
+%
+% *Example 2: Sympolic ZT*
+% 
+% Find ZT of x[n]=a^n u[n]
+%
+syms a n x X % define symbolic variables
+x=a^n;       % define sequence x[n] (Table 3.1)
+X=ztrans(x)  % perform ZT
+
+%%
+% *Example 3: Sympolic ZT*
+%
+% Find ZT of x[n]=cos[wn]
+%
+syms w n x X % define symbolic variables
+x=cos(w*n);  % define sequence x[n] (Table 3.1)
+X=ztrans(x)  % perform ZT
+
+%%
+% *Example 4: Sympolic iZT*
+% (Oppenhiem, Ex. 3.10) 
+%
+% Find iZT of 
+%
+% $$ X(z)=\frac{1+2z^{-1}+z^{-2}}{1-\frac{3}{2}z^{-1}+\frac{1}{2}z^{-2}} $$
+%
+syms z x X   % define symbolic variables
+X=(z^2+2*z+1)/(z^2-3*z/2+1/2) %define transfer function X(z)
+x=iztrans(X) % perform inverse ZT
+
+%%
+% <html><h3> 2. Power Series Method </h3></html>
+%
+% The *deconv* function can be used to perform the long
+% division required in power series method.
+%
+% For the given z-transform
+%
+% $$ X(z)=\frac{b_0+b_1z^{-1}+...+b_Mz^{-M}}{a_0+a_1z^{-1}+...+a_Mz^{-M}} $$
+%
+% the matlab command is *[q,r]=deconv(b,a)* where b and a vectors
+% containing the coefficients of the numerator and denominator
+% respectively.
+%
+% *Example 5: iZT by deconvolution*
+% 
+% Given X(z) find x[n] by deconvolution
+%
+% $$ X(z)=\frac{1+2z^{z-1}+z^{-2}}{1-z^{z-1}+0.4z^{-2}} $$
+
+b=[1 2 1];
+a=[1 -1 .4];
+n=20;
+b=[b zeros(1,n)]; % make b longer
+[x,r]=deconv(b,a);
+% plot
+figure;
+stem(subplot(211),[0:length(x)-1],x) % plot
+title('Power Series Expansion Solution of x[n]'); xlim([0 21])
+ylabel('Amplitude')
+% Compare impulse response
+subplot(212);
+impz(b,a); % plot impulse response
+title('Impulse Response x[n]'); xlim([0 21])
+
+%% 
+% *3. Partial fraction expansion (PFE) method*
+% 
+% $$ H(z)=\frac{B(z)}{A(z)}=\frac{b_0+b_1z^{-1}+...+b_Mz^{-M}}{a_0+a_1z^{-1}+...+a_Mz^{-M}} $$
+% 
+% We can use the MATLAB *residuez* function to convert between
+% partial fraction expansion and polynomial coefficients. Partial fraction expansion
+% may yield a z-function that is then solvable using the inspection method. 
+% If there are no multiple roots, then
+%
+% $$ \frac{B(z)}{A(z)}=\frac{r_1}{1-p_1z^{-1}} +\frac{r_2}{1-p_2z^{-1}}+...+\frac{r_n}{1-p_nz^{-1}}+k_1+k_2z^{-1}+...+k_{m-n-1}z^{-m-n} $$
+%
+% *Example 8: PFE*
+%
+% Find the partial fraction expansion of X(z) that is given by
+%
+% $$ X(z)=\frac{1}{(1-\frac{1}{4}z^{-1})(1-\frac{1}{2}z^{-1})} $$
+% 
+b=1; % numerator coefficients
+a=conv([1 -1/4],[1 -1/2]); % multiplying polynomials to get denom. coef.
+[r,p,k]=residuez(b,a) % compute residues (r), poles (p), and direct terms (k)
+
+%%
+% This represents the partial fraction expansion
+%
+% $$ X(z)=\frac{2}{1-\frac{1}{2}z^{-1}}+\frac{-1}{1-\frac{1}{4}z^{-1}} $$
+
+%%
+% *Example 7: PFE*
+% (Oppenheim, Ex. 3.10)
+%
+% Find the partial fraction expansion of X(z) that is given by
+%
+% $$ X(z)=\frac{1+2z^{-1}+z^{-2}}{1-\frac{3}{2}z^{-1}+\frac{1}{2}z^{-2}} $$
+% 
+b=[1 2 1]; % numerator coefficients
+a=[1 -3/2 1/2]; % denominator coefficients
+[r,p,k]=residuez(b,a) % compute residues (r), poles (p), and direct terms (k)
+
+%%
+% This represents the fraction expansion
+%
+% $$ X(z)=\frac{8}{1-z^{-1}}+\frac{-9}{1-\frac{1}{2}z^{-1}}+2 $$
+%
+
+%% Pole-Zero Diagram
+%
+% Matlab contains several functions that may help when working with zeros and
+% poles. The *zplane* and *pzmap* functions can be used display pole-zero (PZ)
+% diagram of z-functions. The poles and zeros can be determined from 
+% rational polynomials using *roots*, *poles*, and *zero* functions.
+%
+% *Example 8: Poles, Zeros, and PZ map* 
+%
+% Given H(z) below find the zeros, poles, and plot the PZ map. We
+% will use three methods to find the poles and zeros, and use
+% three methods to plot the PZ map.
+%
+% $$ H(z)=\frac{1-2z^{-1}}{1-\frac{2}{3}z^{-1}} $$
+%
+
+a=[1 -2/3]; % denominator coefs.
+b=[1 -2];   % numerator coefs.
+
+% ZP Method 1 - using 'roots' and 'zplane' functions
+p1=roots(a);    % get poles of rational function
+z1=roots(b);    % get zeros of rational function
+disp(['Method 1: poles=[' num2str(p1) '] , zeros=[' num2str(z1) ']'])
+
+% ZP Method 2 - using 'tf', 'pole', 'zero', and 'pzplot' functions
+H=tf(b,a);      % generate trasfer function based on rational polynomial
+p2=pole(H);     % get poles of transfer function
+z2=zero(H);     % get zeros of transfer function
+disp(['Method 2: poles=[' num2str(p2) '] , zeros=[' num2str(z2) ']'])
+H               % print transfer funtion to command line 
+
+% ZP Method 3 - using 'tf2zpk'
+[z3,p3,k3] = tf2zpk(b,a);   %Convert transfer function filter parameters to zero-pole-gain form
+disp(['Method 3: poles=[' num2str(p3) '] , zeros=[' num2str(z3) '], gain=' num2str(k3)])
+
+% Plot Method 1: using zplane(b,a). NOTE: a and b must be row vectors.
+figure; zplane(b,a);  
+title('PZ Map using zplane(b,a)'); 
+xlim([-2 2]); ylim([-2 2]);
+xlabel('Real Axis'); ylabel('Imaginary Axis')
+
+% Plot Method 2: using zplane(z,p). NOTE: z and p must be column vectors.
+figure; zplane(z1,p1);  
+title('PZ Map using zplane(z,p)'); 
+xlim([-2 2]); ylim([-2 2]);
+xlabel('Real Axis'); ylabel('Imaginary Axis')
+
+% Plot Method 3: using pzmap
+figure; pzmap(H);     
+title('PZ Map using pzmap');
+xlim([-2 2]); ylim([-2 2]);
+xlabel('Real Axis'); ylabel('Imaginary Axis')
+
+%% Problem 1: Convolution
+% (Ingle, Ex. 2.10)
+%
+% Consider the finite duration input sequence x[n] given by
+%
+% $$ x[n]=u[n]-u[n-10] $$
+% 
+% and the infinite duration impulse response h[n] is given by
+%
+% $$ h[n]=(0.9)^nu[n]. $$
+%
+% Determine y[n]=x[n]*h[n]
+%
+
+n=-5:50;            % define range of n
+x = stepseq(0,-5,50) - stepseq(10,-5,50); % generate x[n]
+h=.9.^(0:50);       % generate h[n]
+y_conv=conv(x,h);   % convolve x and h
+y_conv=y_conv(1:length(x)); % keep samples of interest
+y_filt=filter(1,[1 -.9],x); % compare with filter function
+
+% plot convoltion
+figure; subplot(211);
+stem(n, y_conv); % plot output sequence
+xlim([-5 50]); 
+title('Output Sequence y[n] (convolution)'); 
+xlabel('n (samples)'); ylabel('Amplitude');
+
+% plot filter comparison
+subplot(212);
+stem(n, y_filt); % plot output sequence
+xlim([-5 50]); 
+title('Output Sequence y[n] (filter fxn)'); 
+xlabel('n (samples)'); ylabel('Amplitude');
+%% Problem 2: iZT
+%
+% Determine the iZT of X(z) so that the resulting sequence is
+% causual and contains no complex numbers where X(z) is given as
+%
+% $$ X(z)=\frac{1+0.4\sqrt{2}z^{-1}}{1-0.8\sqrt{2}z^{-1}+0.64z^{-2}}. $$
+%
+b=[1 0.4*sqrt(2)];
+a=[1 -0.8*sqrt(2) 0.64];
+[r,p,c] = residuez(b,a)
+Mp=abs(p')      % pole magnitude
+Ap=angle(p')/pi % pole angles in pi units
+
+%%
+% From the above we get
+%
+% $$ X(z)=\frac{0.5+j}{1-\left | 0.8 \right | e^{-j\frac{\pi}{4}}z^{-1}} + \frac{0.5-j}{1-\left | 0.8 \right | e^{j\frac{\pi}{4}}z^{-1}} , \left | z \right | > 0.8 $$
+%
+% and from Table 3.1 we have
+% 
+% $$ x[n]=(0.5+j) \left | 0.8 \right | ^ne^{-j\frac{\pi}{4}n}u[n]] + (0.5-j) \left | 0.8 \right | ^ne^{j\frac{\pi}{4}n}u[n]  $$
+%
+% $$ x[n]=\left | 0.8\right |^n  \left [ 0.5 \left \{ e^{-j\frac{\pi}{4}n} + e^{j\frac{\pi}{4}n} \right \}  + j\left \{ e^{-j\frac{\pi}{4}n} + e^{j\frac{\pi}{4}n} \right \} \right ]u[n] $$
+%
+% $$ x[n]=\left | 0.8\right |^n  \left [ cos{\left \{  \frac{\pi n}{4}\right \}} + 2sin{\left \{\frac{\pi n}{4}\right \}} \right ]u[n] $$
+%
+
+%%
+%verify in Matlab
+n=0:20;
+impseq=[1 zeros(1, length(n)-1)];         % generate impulse sequence
+x1=filter(b,a,impseq);                    % compute impulse response
+x2=(0.8.^n).*(cos(pi*n/4)+2*sin(pi*n/4)); % compute impulse response (book solution)
+
+% Plot 
+figure; subplot(211);
+stem(n,x1); % plot impulse response
+title('Impulse Response from filter fxn');
+xlabel('n (samples)'); ylabel('Amplitude');
+
+subplot(212);
+stem(n,x2); % plot impusle response
+title('Impulse Response from solution');
+xlabel('n (samples)'); ylabel('Amplitude');
+
+figure;
+zplane(b,a); % plot PZ map
+
+
+%% Problem 3: PFE and PZ-plot with repeated roots
+% (Oppenheim, 3.33a)
+%
+% Find the partial fraction expansion of X(z) that is given by
+%
+% $$ X(z)=\frac {1} {(1-\frac{1}{2}z^{-1})^2(1-2z^{-1})(1-3z^{-1})} $$
+% 
+b=[1]; % numerator coefficients
+a1=conv([1 1/2],[1 1/2]); % multiplying polynomials to get denom. coef.
+a23=conv([1 -2],[1 -3]);
+a=conv(a1,a23);
+
+[r,p,k]=residuez(b,a) % compute residues (r), poles (p), and direct terms (k)
+
+%%
+% This represents the partial fraction expansion
+%
+% $$ X(z)=\frac{2.2041}{1-3z^{-1}}+\frac{-1.28}{1-2z^{-1}} + \frac{0.473}{1+\frac{1}{2}z^{-1}} + \frac{0.286}{(1+\frac{1}{2}z^{-1})^2} $$
+%
+figure; zplane(b,a)
+
+%% Problem 4: Impulse, Step, and Freq. Response 
+% (Oppenheim, Problem 2.9)
+%
+% Find the impulse response, freq. response, and step response of the
+% LTI system defined by the difference equation
+%
+% $$ y[n]-\frac{5}{6}y[n-1]+\frac{1}{6}y[n-2]=\frac{1}{3}x[n-1]. $$
+%
+
+a=[1 -5/6 1/6];
+b=[0 1/3 0];
+figure; freqz(b,a) % frequency response
+title('Freq. Response')
+
+figure;
+subplot(221); impz(b,a)  % plot impulse response
+subplot(222); stepz(b,a) % plot step response
+
+% Compare with book solution
+n=0:14;
+hImp=-2*(1/3).^n+2*(1/2).^n;
+hStep=1+(1/3).^n-2*(1/2).^n;
+subplot(223); stem(n,hImp)  % plot impulse response
+title('Impulse Response (book)'); xlabel('n (samples)'); ylabel('Amplitude');
+subplot(224); stem(n,hStep)  % plot impulse response
+title('Step Response (book)'); xlabel('n (samples)'); ylabel('Amplitude');
+
+%% Problem 5: Impulse of Causal and Anticausal System 
+% (Oppenheim, Problem 2.16)
+%
+% Consider the difference equation
+%
+% $$ y[n]-\frac{1}{4}y[n-1]+\frac{1}{8}y[n-2]=3x[n-1] $$
+%
+% b) Both a causal and an anticausal LTI system are
+% characterized by this difference equation. Find the impulse
+% responses of the two systems.
+% c) Show that the causal LTI is stable and the anticausal LTI
+% system is unstable.
+%
+% From the difference equation and the ZT we can generate the system
+% function H(z)
+%
+% $$ H(z)=\frac{3}{1-\frac{1}{4}z^{-1}-\frac{1}{4}z^{-1}} $$
+%
+% We can use matlab to get the expanded form of H(z).
+
+b=[3];
+a=[1 -1/4 -1/8];
+[r,p,c]=residuez(b,a)
+
+%%
+% $$ H(z)=\frac{2}{1-0.5z^{-1}} + \frac{1}{1+0.25z^{-1}} $$
+%
+% Using Table 3.1 we get the following causal and anticausal
+% impulse responses by taking the iZT of the terms in H(z).
+%
+% $$ h_c[n]=\left [ 2(1/2)^n + (-1/4)^n \right ] u[n] $$
+% 
+% $$ h_ac[n]=-\left [ 2(1/2)^n + (-1/4)^n \right ] u[-n-1] $$
+%
+% From ROC we see causal system is stable (ROC includes unit
+% cirlce) and the anticausal system in unstable.
+
+n=0:50;
+hc=2*(1/2).^n + (-1/4).^n;
+n=-50:0;
+hac=-2*(1/2).^-n - (-1/4).^-n;
+    
+roc_c=max(abs(p));  %ROC of causal is righ-sided extending from largest pole 
+roc_ac=min(abs(p)); %ROC of causal is righ-sided extending from smallest pole 
+
+% Plot Pole-Zero maps with ROC
+% Causal System
+figure;
+circle(roc_c,0) % draw ROC
+hold('on');
+zplane(b,a) % draw ZP map
+title('PZ Map (causal)')
+% Anticausal System
+figure;
+circle(roc_ac,0) % draw ROC
+hold('on');
+zplane(b,a) % draw ZP map
+title('PZ Map (anticausal)')
+
+%% Problem 5: Pole-Zero Plot
+% (Oppenheim, Problem 3.12)
+%
+% Sketch the pole-zero plot for each of the following z-transforms and shade ROC:
+%
+% $$ X_1(z)=\frac{1-1/2z^{-1}}{1+1/2z^{-1}}, ROC: \left | z \right | <2 $$
+%
+% $$ X_2(z)=\frac{1-1/3z^{-1}}{\left ( 1+1/2z^{-1} \right )\left ( 1-2/3z^{-1} \right )}, x_2[n] causal $$
+%
+% $$ X_3(z)=\frac{1+z^{-1}-2z^{-2}}{1-13/6z^{-1}+z^{-2}} , x_3[n] absolutely summable $$
+%
+
+% define a and b of each z-function
+a1=[1 2];
+b1=[1 -1/2];
+a2=conv([1 1/2],[1 -2/3]);
+b2=[1 -1/3];
+a3=[1 -13/6 1];
+b3=[1 1 -2];
+
+% find poles for each to determine ROC
+p1=roots(a1);
+p2=roots(a2);
+p3=roots(a3);
+disp(['p1=[' num2str(p1') '], p2=[' num2str(p2') '], p3=[' num2str(p3') ']' ])
+
+%%
+% X1(z) has ROC |z|<2, X2(z) has ROC |z|>2/3, X3(z) has ROC 2/3 < |z| < 3/2
+
+%plot each PZ map and ROC
+% X1
+figure;
+circle(p1,0) % draw ROC
+hold 'on';
+zplane(b1,a1) % draw ZP map
+title('PZ Map: X_1(z)')
+
+% X2
+figure;
+circle(max(abs(p2)),1) % draw ROC
+hold 'on';
+zplane(b2,a2); % draw ZP map
+title('PZ Map: X_2(z)')
+set(gca,'color',[.95 .95 .95])
+
+% X3
+figure;
+circle(3/2,0); hold on; circle(2/3,2); % draw ROC
+hold on;
+zplane(b3,a3) % draw ZP map
+title('PZ Map: X_3(z)')
+
+%% References
+% 
+% Alan V. Oppenheim and Ronald W. Schafer. 2009. Discrete-Time
+% Signal Processing (3rd ed.). Prentice Hall Press, Upper Saddle River, NJ, USA. 
+% 
+% Vinay K. Ingle and John G. Proakis. 1999. Digital Signal
+% Processing Using MATLAB (1st ed.). Brooks/Cole Publishing Co., Pacific Grove, CA, USA.
+
+%% Subfunctions
+
+type circle
+%%
+type stepseq
+
+%% Useful MATLAB Functions
+%
+% <html>
+%  <ul>
+%   <li><a href="http://www.mathworks.com/help/techdoc/ref/poly.html">poly</a></li>
+%   <li><a href="http://www.mathworks.com/help/techdoc/ref/roots.html">roots</a></li>
+%   <li><a href="http://www.mathworks.com/help/toolbox/signal/residuez.html">residuez</a></li>
+%   <li><a href="http://www.mathworks.com/help/toolbox/control/ref/tf.html">tf</a></li>
+%   <li><a href="http://www.mathworks.com/help/toolbox/control/ref/zpk.html">zpk</a></li>
+%   <li><a href="http://www.mathworks.com/help/toolbox/signal/zp2tf.html">zp2tf</a></li>
+%   <li><a href="http://www.mathworks.com/products/signal/functionlist.html">tf2zpk</a></li>
+%   <li><a href="http://www.mathworks.com/help/techdoc/ref/conv.html">conv</a></li
+%   <li><a href="http://www.mathworks.com/help/techdoc/ref/deconv.html">deconv</a></li>
+%   <li><a href="http://www.engin.umich.edu/group/ctm/extras/commands.html">dimpulse</a></li>
+%   <li><a href="http://www.mathworks.com/help/toolbox/signal/freqz.html">freqz</a></li>
+%   <li><a href="http://www.mathworks.com/help/techdoc/ref/filter.html">filter</a></li>
+%   <li><a href="http://www.mathworks.com/help/toolbox/control/ref/pzmap.html">pzmap</a></li>
+%   <li><a href="http://www.mathworks.com/help/toolbox/signal/impz.html">impz</a></li>
+%   <li><a href="http://www.mathworks.com/help/toolbox/signal/stepz.html">stepz</a></li>
+%   <li><a
+%   href="http://www.mathworks.com/help/techdoc/ref/poly.html">abc</a></li>
+%  </ul>
+% </html>
+
+%%
+close all;  % close all figures
+clear       % clear workspace
+
+
+##### SOURCE END #####
+--></body></html>
